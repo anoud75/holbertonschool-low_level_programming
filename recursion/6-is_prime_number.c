@@ -1,22 +1,33 @@
 #include "main.h"
 
-static int _prime_test(int n, int d)
-{
-	if (n < 2)
-		return (0);
-	if (d * d > n)
-		return (1);
-	if (n % d == 0)
-		return (0);
-	return (_prime_test(n, d + 1));
-}
+/* helper (no static): recursively test divisors starting at 2 */
+int prime_check(int n, int d);
 
 /**
- * is_prime_number - checks if n is a prime number
- * @n: number
+ * is_prime_number - returns 1 if n is a prime, otherwise 0
+ * @n: integer to test
+ *
  * Return: 1 if prime, 0 otherwise
  */
 int is_prime_number(int n)
 {
-	return (_prime_test(n, 2));
+	if (n <= 1)
+		return (0);
+	return (prime_check(n, 2));
+}
+
+/**
+ * prime_check - recursive divisor test up to sqrt(n)
+ * @n: number being tested
+ * @d: current divisor guess (>= 2)
+ *
+ * Return: 1 if no divisor found (prime), 0 if divisible
+ */
+int prime_check(int n, int d)
+{
+	if (d * d > n)   /* past sqrt(n): n is prime */
+		return (1);
+	if (n % d == 0) /* found a divisor */
+		return (0);
+	return (prime_check(n, d + 1));
 }
