@@ -9,15 +9,16 @@
  */
 struct dog
 {
-        char *name;
-        float age;
-        char *owner;
+	char *name;
+	float age;
+	char *owner;
 };
 
-/* typedef alias */
+/**
+ * dog_t - typedef for struct dog
+ */
 typedef struct dog dog_t;
 
-/* prototypes */
 void init_dog(struct dog *d, char *name, float age, char *owner);
 void print_dog(struct dog *d);
 dog_t *new_dog(char *name, float age, char *owner);
