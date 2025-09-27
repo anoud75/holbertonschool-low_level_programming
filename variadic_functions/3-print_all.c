@@ -28,7 +28,7 @@ static void p_str(const char **sep, char *s)
 
 /**
  * print_all - prints anything according to a format string
- * @format: types: 'c' char, 'i' int, 'f' float, 's' char *
+ * @format: list of types: 'c' char, 'i' int, 'f' float, 's' char *
  */
 void print_all(const char * const format, ...)
 {
