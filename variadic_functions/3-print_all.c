@@ -2,22 +2,44 @@
 #include <stdio.h>
 #include "variadic_functions.h"
 
-/* helpers keep print_all short for Betty */
+/**
+ * p_char - print a char with current separator and update it
+ * @sep: pointer to current separator string
+ * @c: character (as int) to print
+ */
 static void p_char(const char **sep, int c)
 {
 	printf("%s%c", *sep, (char)c);
 	*sep = ", ";
 }
+
+/**
+ * p_int - print an int with separator and update it
+ * @sep: pointer to current separator string
+ * @n: integer to print
+ */
 static void p_int(const char **sep, int n)
 {
 	printf("%s%d", *sep, n);
 	*sep = ", ";
 }
+
+/**
+ * p_float - print a double with separator and update it
+ * @sep: pointer to current separator string
+ * @d: double to print
+ */
 static void p_float(const char **sep, double d)
 {
 	printf("%s%f", *sep, d);
 	*sep = ", ";
 }
+
+/**
+ * p_str - print a string (or "(nil)") with separator and update it
+ * @sep: pointer to current separator string
+ * @s: string to print (may be NULL)
+ */
 static void p_str(const char **sep, char *s)
 {
 	if (s == NULL)
@@ -41,11 +63,20 @@ void print_all(const char * const format, ...)
 	{
 		switch (format[i])
 		{
-		case 'c': p_char(&sep, va_arg(ap, int)); break;
-		case 'i': p_int(&sep, va_arg(ap, int)); break;
-		case 'f': p_float(&sep, va_arg(ap, double)); break;
-		case 's': p_str(&sep, va_arg(ap, char *)); break;
-		default: break;
+		case 'c':
+			p_char(&sep, va_arg(ap, int));
+			break;
+		case 'i':
+			p_int(&sep, va_arg(ap, int));
+			break;
+		case 'f':
+			p_float(&sep, va_arg(ap, double));
+			break;
+		case 's':
+			p_str(&sep, va_arg(ap, char *));
+			break;
+		default:
+			break;
 		}
 		i++;
 	}
