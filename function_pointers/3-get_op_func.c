@@ -1,3 +1,4 @@
+#include <stdlib.h> /* for NULL */
 #include "3-calc.h"
 
 /**
