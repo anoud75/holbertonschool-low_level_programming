@@ -2,38 +2,20 @@
 #include <stdio.h>
 #include "variadic_functions.h"
 
-/* helper: print separator once we've already printed something */
-static void maybe_sep(const char **sep)
-{
-	if (**sep) /* (if #1) print only after first valid item */
-		printf("%s", *sep);
-	*sep = ", ";
-}
-
-/* helper: print string or (nil) if NULL */
-static void print_cstring(char *s)
-{
-	if (s == NULL) /* (if #2) */
-		printf("(nil)");
-	else
-		printf("%s", s);
-}
-
 /**
  * print_all - prints anything according to a format string
- * @format: "c" char, "i" int, "f" float, "s" char* (NULL => (nil))
+ * @format: list of types: 'c' char, 'i' int, 'f' float, 's' char*
  *
- * Notes/constraints met:
- *  - No for/goto/?:/else/do..while
- *  - Uses 1 while loop in this function
- *  - The only ifs are inside helpers (still just 2 total in file)
- *  - Ignores unknown specifiers
+ * Rules: no for/goto/else/do..while/?:; at most 2 if (we use 1); at most 2 while (we use 1)
+ * Unknown specifiers are ignored. Separator printed only between valid items.
  */
 void print_all(const char * const format, ...)
 {
 	va_list ap;
 	unsigned int i = 0;
-	const char *sep = "";
+	int printed = 0;                 /* 0 before first valid item, 1 after */
+	const char *sep[2] = {"", ", "}; /* choose sep[printed] */
+	char *s;
 
 	va_start(ap, format);
 
@@ -42,20 +24,25 @@ void print_all(const char * const format, ...)
 		switch (format[i])
 		{
 		case 'c':
-			maybe_sep(&sep);
-			printf("%c", va_arg(ap, int));
+			printf("%s%c", sep[printed], (char)va_arg(ap, int));
+			printed = 1;
 			break;
 		case 'i':
-			maybe_sep(&sep);
-			printf("%d", va_arg(ap, int));
+			printf("%s%d", sep[printed], va_arg(ap, int));
+			printed = 1;
 			break;
 		case 'f':
-			maybe_sep(&sep);
-			printf("%f", va_arg(ap, double));
+			printf("%s%f", sep[printed], va_arg(ap, double));
+			printed = 1;
 			break;
 		case 's':
-			maybe_sep(&sep);
-			print_cstring(va_arg(ap, char *));
+			s = va_arg(ap, char *);
+			printf("%s", sep[printed]);
+			if (s == NULL)              /* only IF we use */
+				printf("(nil)");
+			else
+				printf("%s", s);
+			printed = 1;
 			break;
 		default:
 			/* ignore unknown specifier */
