@@ -3,7 +3,6 @@
 /**
  * get_op_func - select function for operator
  * @s: operator string
- *
  * Return: pointer to matching function, or NULL if no match
  */
 int (*get_op_func(char *s))(int, int)
