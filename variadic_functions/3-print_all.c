@@ -1,74 +1,49 @@
+#include <stdarg.h>
+#include <stdio.h>
 #include "variadic_functions.h"
 
 /**
- * print_number - prints a number recursively
- * @n: number to print
- */
-void print_number(unsigned int n)
-{
-	if (n / 10)
-		print_number(n / 10);
-	_putchar((n % 10) + '0');
-}
-
-/**
- * print_all - prints anything based on format string
- * @format: list of types of arguments passed to the function
+ * print_all - prints anything according to a format string
+ * @format: list of types: 'c' char, 'i' int, 'f' float, 's' char *
  *
- * Description: Prints arguments according to format specifiers
+ * Unknown specifiers are ignored. Always prints a trailing newline.
  */
 void print_all(const char * const format, ...)
 {
-	va_list args;
-	int i, j, n;
-	char *sep, *s;
-	float f;
+	va_list ap;
+	unsigned int i = 0;
+	const char *sep = "";
+	char *s;
 
-	va_start(args, format);
-	i = 0;
-	sep = "";
+	va_start(ap, format);
+
 	while (format && format[i])
 	{
-		if (format[i] == 'c' || format[i] == 'i' || format[i] == 'f' || format[i] == 's')
+		switch (format[i])
 		{
-			j = 0;
-			while (sep[j])
-				_putchar(sep[j++]);
+		case 'c':
+			printf("%s%c", sep, (char)va_arg(ap, int));
 			sep = ", ";
-		}
-		if (format[i] == 'c')
-			_putchar(va_arg(args, int));
-		if (format[i] == 'i')
-		{
-			n = va_arg(args, int);
-			if (n < 0)
-			{
-				_putchar('-');
-				n = -n;
-			}
-			print_number(n);
-		}
-		if (format[i] == 'f')
-		{
-			f = va_arg(args, double);
-			if (f != f)
-			{
-				_putchar('n');
-				_putchar('a');
-				_putchar('n');
-			}
-		}
-		if (format[i] == 's')
-		{
-			s = va_arg(args, char *);
-			if (s == 0)
-				s = "(nil)";
-			j = 0;
-			while (s[j])
-				_putchar(s[j++]);
+			break;
+		case 'i':
+			printf("%s%d", sep, va_arg(ap, int));
+			sep = ", ";
+			break;
+		case 'f':
+			printf("%s%f", sep, va_arg(ap, double));
+			sep = ", ";
+			break;
+		case 's':
+			s = va_arg(ap, char *);
+			if (!s) s = "(nil)"; /* only IF in the file */
+			printf("%s%s", sep, s);
+			sep = ", ";
+			break;
+		default:
+			break;
 		}
 		i++;
 	}
-	va_end(args);
-	_putchar('\n');
+	printf("\n");
+	va_end(ap);
 }
