@@ -3,11 +3,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-/**
- * close_fd - closes a file descriptor and checks for errors
- * @fd: file descriptor to close
- */
-void close_fd(int fd)
+/* close helper that exits with code 100 on failure */
+static void close_fd(int fd)
 {
 	if (close(fd) == -1)
 	{
@@ -17,17 +14,17 @@ void close_fd(int fd)
 }
 
 /**
- * main - copies the content of a file to another file
+ * main - copy the content of a file to another file
  * @argc: argument count
  * @argv: argument vector
  *
- * Return: 0 on success, exits with specific codes on error
+ * Return: 0 on success, exits (97/98/99/100) on error per spec
  */
 int main(int argc, char *argv[])
 {
 	int fd_from, fd_to;
-	ssize_t r, w;
-	char buffer[1024];
+	ssize_t r;
+	char buf[1024];
 
 	if (argc != 3)
 	{
@@ -50,29 +47,36 @@ int main(int argc, char *argv[])
 		exit(99);
 	}
 
-	while ((r = read(fd_from, buffer, 1024)) > 0)
+	/* read->write loop; check read each iteration and handle short writes */
+	while (1)
 	{
-		w = write(fd_to, buffer, r);
-		if (w != r)
+		r = read(fd_from, buf, sizeof(buf));
+		if (r == 0) /* EOF */
+			break;
+		if (r == -1)
 		{
-			dprintf(STDERR_FILENO, "Error: Can't write to %s\n", argv[2]);
+			dprintf(STDERR_FILENO, "Error: Can't read from file %s\n", argv[1]);
 			close_fd(fd_from);
 			close_fd(fd_to);
-			exit(99);
+			exit(98);
 		}
-	}
 
-	if (r == -1)
-	{
-		dprintf(STDERR_FILENO, "Error: Can't read from file %s\n", argv[1]);
-		close_fd(fd_from);
-		close_fd(fd_to);
-		exit(98);
+		ssize_t written = 0;
+		while (written < r)
+		{
+			ssize_t w = write(fd_to, buf + written, r - written);
+			if (w == -1)
+			{
+				dprintf(STDERR_FILENO, "Error: Can't write to %s\n", argv[2]);
+				close_fd(fd_from);
+				close_fd(fd_to);
+				exit(99);
+			}
+			written += w;
+		}
 	}
 
 	close_fd(fd_from);
 	close_fd(fd_to);
-
 	return (0);
 }
-
