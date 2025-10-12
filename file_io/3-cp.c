@@ -78,17 +78,20 @@ int main(int argc, char *argv[])
 		error_write(argv[2], fd_from, -1);
 
 	bytes_read = read(fd_from, buffer, 1024);
+	if (bytes_read == -1)
+		error_read(argv[1], fd_from, fd_to);
+
 	while (bytes_read > 0)
 	{
 		bytes_written = write(fd_to, buffer, bytes_read);
 		if (bytes_written != bytes_read)
 			error_write(argv[2], fd_from, fd_to);
 		bytes_read = read(fd_from, buffer, 1024);
+		if (bytes_read == -1)
+			error_read(argv[1], fd_from, fd_to);
 	}
-	if (bytes_read == -1)
-		error_read(argv[1], fd_from, fd_to);
 
 	close_file(fd_from);
 	close_file(fd_to);
 	return (0);
-}
+}/**
