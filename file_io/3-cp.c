@@ -1,15 +1,16 @@
-#include "main.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
-void close_fd(int fd);
-void read_error(char *file, int fd_from, int fd_to);
-void write_error(char *file, int fd_from, int fd_to);
+#define BUF 1024
 
 /**
- * close_fd - closes a file descriptor
- * @fd: file descriptor to close
+ * close_or_die - close fd or exit 100
+ * @fd: file descriptor
  */
-void close_fd(int fd)
+static void close_or_die(int fd)
 {
 	if (close(fd) == -1)
 	{
@@ -19,74 +20,91 @@ void close_fd(int fd)
 }
 
 /**
- * read_error - handles read error
- * @file: filename
- * @fd_from: source fd
- * @fd_to: destination fd
+ * read_retry - read with EINTR retry; exit 98 on error
+ * @fd: src fd
+ * @buf: buffer
+ * @n: bytes to read
+ * @name: src filename (for message)
+ * Return: bytes read (>= 0)
  */
-void read_error(char *file, int fd_from, int fd_to)
+static ssize_t read_retry(int fd, char *buf, size_t n, const char *name)
 {
-	dprintf(STDERR_FILENO, "Error: Can't read from file %s\n", file);
-	if (fd_from != -1)
-		close(fd_from);
-	if (fd_to != -1)
-		close(fd_to);
-	exit(98);
+	ssize_t r;
+
+	do {
+		r = read(fd, buf, n);
+	} while (r == -1 && errno == EINTR);
+
+	if (r == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't read from file %s\n", name);
+		exit(98);
+	}
+	return (r);
 }
 
 /**
- * write_error - handles write error
- * @file: filename
- * @fd_from: source fd
- * @fd_to: destination fd
+ * write_all - write all n bytes, exit 99 on error
+ * @fd: dst fd
+ * @name: dst filename (for message)
+ * @buf: data
+ * @n: bytes to write
  */
-void write_error(char *file, int fd_from, int fd_to)
+static void write_all(int fd, const char *name, const char *buf, ssize_t n)
 {
-	dprintf(STDERR_FILENO, "Error: Can't write to %s\n", file);
-	if (fd_from != -1)
-		close(fd_from);
-	if (fd_to != -1)
-		close(fd_to);
-	exit(99);
+	ssize_t off = 0, w;
+
+	while (off < n)
+	{
+		do {
+			w = write(fd, buf + off, n - off);
+		} while (w == -1 && errno == EINTR);
+
+		if (w == -1)
+		{
+			dprintf(STDERR_FILENO, "Error: Can't write to %s\n", name);
+			exit(99);
+		}
+		off += w;
+	}
 }
 
 /**
- * main - copies content of a file to another file
- * @argc: argument count
- * @argv: argument vector
+ * main - copy file_from to file_to
+ * @ac: argc
+ * @av: argv
  * Return: 0 on success
  */
-int main(int argc, char *argv[])
+int main(int ac, char **av)
 {
-	int fd_from, fd_to, r, w;
-	char buffer[1024];
+	int f_from, f_to;
+	ssize_t r;
+	char buf[BUF];
 
-	if (argc != 3)
+	if (ac != 3)
 	{
 		dprintf(STDERR_FILENO, "Usage: cp file_from file_to\n");
 		exit(97);
 	}
-
-	fd_from = open(argv[1], O_RDONLY);
-	if (fd_from == -1)
-		read_error(argv[1], -1, -1);
-
-	fd_to = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0664);
-	if (fd_to == -1)
-		write_error(argv[2], fd_from, -1);
-
-	while ((r = read(fd_from, buffer, 1024)) > 0)
+	f_from = open(av[1], O_RDONLY);
+	if (f_from == -1)
 	{
-		w = write(fd_to, buffer, r);
-		if (w != r)
-			write_error(argv[2], fd_from, fd_to);
+		dprintf(STDERR_FILENO, "Error: Can't read from file %s\n", av[1]);
+		exit(98);
 	}
-
-	if (r == -1)
-		read_error(argv[1], fd_from, fd_to);
-
-	close_fd(fd_from);
-	close_fd(fd_to);
-
+	r = read_retry(f_from, buf, BUF, av[1]);
+	f_to = open(av[2], O_WRONLY | O_CREAT | O_TRUNC, 0664);
+	if (f_to == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't write to %s\n", av[2]);
+		close_or_die(f_from);
+		exit(99);
+	}
+	if (r > 0)
+		write_all(f_to, av[2], buf, r);
+	while ((r = read_retry(f_from, buf, BUF, av[1])) > 0)
+		write_all(f_to, av[2], buf, r);
+	close_or_die(f_from);
+	close_or_die(f_to);
 	return (0);
 }
